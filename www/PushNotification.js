@@ -1,4 +1,9 @@
 
+ var exec = require('cordova/exec'),
+    cordova = require('cordova'),
+    channel = require('cordova/channel'),
+    utils = require('cordova/utils');
+
 var PushNotification = function() {
 };
 
@@ -57,9 +62,6 @@ PushNotification.prototype.setApplicationIconBadgeNumber = function(successCallb
 
 //-------------------------------------------------------------------
 
-if(!window.plugins) {
-    window.plugins = {};
-}
-if (!window.plugins.pushNotification) {
-    window.plugins.pushNotification = new PushNotification();
-}
+var me = new PushNotification();
+
+module.exports = me;
