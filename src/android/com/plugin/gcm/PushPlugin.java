@@ -49,23 +49,22 @@ public class PushPlugin extends CordovaPlugin {
 
 		if (REGISTER.equals(action)) {
 
-			Log.v(TAG, "execute: data=" + data.toString());
-
 			try {
 				JSONObject jo = data.getJSONObject(0);
 				
 				gWebView = this.webView;
-				Log.v(TAG, "execute: jo=" + jo.toString());
-
 				gECB = (String) jo.get("ecb");
 				gSenderID = (String) jo.get("senderID");
 
 				Log.v(TAG, "execute: ECB=" + gECB + " senderID=" + gSenderID);
 
 				GCMRegistrar.register(getApplicationContext(), gSenderID);
+				callbackContext.success();
 				result = true;
+				
 			} catch (JSONException e) {
 				Log.e(TAG, "execute: Got JSON Exception " + e.getMessage());
+				callbackContext.error("JSON Exception");
 				result = false;
 			}
 
@@ -78,9 +77,9 @@ public class PushPlugin extends CordovaPlugin {
 		} else if (UNREGISTER.equals(action)) {
 
 			GCMRegistrar.unregister(getApplicationContext());
-
-			Log.v(TAG, "UNREGISTER");
+			callbackContext.success();
 			result = true;
+			
 		} else {
 			result = false;
 			Log.e(TAG, "Invalid action : " + action);
