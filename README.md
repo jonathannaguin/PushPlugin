@@ -1,10 +1,10 @@
-f# Cordova Push Notifications Plugin for Android and iOS
+## Cordova Push Notifications Plugin for Android, iOS and WP8
 
 ---
 
 ## DESCRIPTION
 
-This plugin is for use with [Cordova](http://incubator.apache.org/cordova/), and allows your application to receive push notifications on both Android and iOS devices. The Android implementation uses [Google's GCM (Google Cloud Messaging) service](http://developer.android.com/guide/google/gcm/index.html), whereas the iOS version is based on [Apple APNS Notifications](http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html)
+This plugin is for use with [Cordova](http://incubator.apache.org/cordova/), and allows your application to receive push notifications on Android, WP8 and iOS devices. The Android implementation uses [Google's GCM (Google Cloud Messaging) service](http://developer.android.com/guide/google/gcm/index.html), the iOS version is based on [Apple APNS Notifications](http://developer.apple.com/library/mac/#documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/ApplePushService/ApplePushService.html) and WP8 is based on [MPNS (Microsoft Push Notification Service)](http://msdn.microsoft.com/en-us/library/windowsphone/develop/hh202945)
 
 **Important** - Push notifications are intended for real devices. The registration process will fail on the iOS simulator. Notifications can be made to work on the Android Emulator. However, doing so requires installation of some helper libraries, as outlined [here,](http://www.androidhive.info/2012/10/android-push-notifications-using-google-cloud-messaging-gcm-php-and-mysql/) under the section titled "Installing helper libraries and setting up the Emulator".
 
@@ -33,79 +33,6 @@ This plugin is for use with [Cordova](http://incubator.apache.org/cordova/), and
 	OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 	THE SOFTWARE.
 
-## Manual Installation for Android
-
-
-1) copy the contents of **src/android/com/** to your project's **src/com/** folder. 
-   copy the contents of **libs/** to your **libs/** folder.
-   The final hirearchy will likely look something like this;
-
-	{project_folder}
-		libs
-			gcm.jar
-			android-support-v13.jar
-			cordova-2.7.0.jar
-		src
-			com
-				plugin
-					gcm
-						CordovaGCMBroadcastReceiver.java
-						GCMIntentService.java
-						PushHandlerActivity.java
-						PushPlugin.java						
-				{company_name}
-					{intent_name}
-						{intent_name}.java						
-
-2) Modify your **AndroidManifest.xml** and add the following lines to your manifest tag:
-
-			<uses-permission android:name="android.permission.GET_TASKS" />
-			<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-			<uses-permission android:name="android.permission.GET_ACCOUNTS" />
-			<uses-permission android:name="android.permission.WAKE_LOCK" />
-			<uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
-			<permission android:name="$PACKAGE_NAME.permission.C2D_MESSAGE" android:protectionLevel="signature" />
-			<uses-permission android:name="$PACKAGE_NAME.permission.C2D_MESSAGE" />
-
-
-3) Modify your **AndroidManifest.xml** and add the following **activity**, **receiver** and **service** tags to your **application** section. (See the Sample_AndroidManifest.xml file in the Example folder.)
-
-			<activity android:name="com.plugin.gcm.PushHandlerActivity"/>
-			<receiver android:name="com.plugin.gcm.CordovaGCMBroadcastReceiver" android:permission="com.google.android.c2dm.permission.SEND" >
-				<intent-filter>
-					<action android:name="com.google.android.c2dm.intent.RECEIVE" />
-					<action android:name="com.google.android.c2dm.intent.REGISTRATION" />
-					<category android:name="$PACKAGE_NAME" />
-				</intent-filter>
-			</receiver>
-			<service android:name="com.plugin.gcm.GCMIntentService" />
-
-4) Modify your **res/xml/config.xml** to include the following line in order to tell Cordova to include this plugin and where it can be found: (See the Sample_config.xml file in the Example folder)
-
-	<plugin name="PushPlugin" value="com.plugin.gcm.PushPlugin" />
-
-5) Add the **PushNotification.js** script to your assets/www folder (or javascripts folder, wherever you want really) and reference it in your main index.html file. This file's usage is described in the **Plugin API** section below.
-
-    <script type="text/javascript" charset="utf-8" src="PushNotification.js"></script>
-
-## Manual Installation for iOS
-
-Copy the following files to your project's Plugins folder:
-
-	AppDelegate+notification.h
-	AppDelegate+notification.m
-	PushPlugin.h
-	PushPlugin.m
-	
-Add a reference for this plugin to the plugins section in **config.xml**:
-
-	<gap:plugin name="com.adobe.plugins.PushPlugin"/>
-
-
-Add the **PushNotification.js** script to your assets/www folder (or javascripts folder, wherever you want really) and reference it in your main index.html file.
-
-    <script type="text/javascript" charset="utf-8" src="PushNotification.js"></script>
-
 ## Automatic Installation
 This plugin is based on [plugman](https://github.com/apache/cordova-plugman). to install it to your app,
 simply execute plugman as follows;
@@ -113,7 +40,7 @@ simply execute plugman as follows;
 	plugman install --platform [PLATFORM] --project [TARGET-PATH] --plugin [PLUGIN-PATH]
 	
 	where
-		[PLATFORM] = ios or android
+		[PLATFORM] = ios or android or wp8
 		[TARGET-PATH] = path to folder containing your phonegap project
 		[PLUGIN-PATH] = path to folder containing this plugin
 
@@ -122,7 +49,7 @@ For additional info, take a look at the [Plugman Documentation](https://github.c
 Installation with the [Cordova Command-Line Interface (CLI)](http://docs.phonegap.com/en/3.0.0/guide_cli_index.md.html#The%20Command-line%20Interface) in 3.0.0 or later is even easier:
 
 ```
-cordova plugins add https://github.com/phonegap-build/PushPlugin
+cordova plugins add https://github.com/jonathannaguin/PushPlugin
 ```
 
 ## Plugin API
@@ -246,7 +173,41 @@ In this example, be sure and substitute your own senderID. Get your senderID by 
 Looking at the above message handling code for Android, a few things bear explaination. Your app may receive a notification while it is active (INLINE). If you background the app by hitting the Home button on your device, you may later receive a status bar notification. Selecting that notification from the status will bring your app to the front and allow you to process the notification (BACKGROUND). Finally, should you completely exit the app by hitting the back button from the home page, you may still receive a notification. Touching that notification in the notification tray will relaunch your app and allow you to process the notification (COLDSTART). In this case the **coldstart** flag will be set on the incoming event. You can look at the **foreground** flag on the event to determine whether you are processing a background or an in-line notification. You may choose, for example to play a sound or show a dialog only for inline or coldstart notifications since the user has already been alerted via the status bar.
 
 Also make note of the **payload** object. Since the Android notification data model is much more flexible than that of iOS, there may be additional elements beyond **message**, **soundname**, and **msgcnt**. You can access those elements and any additional ones via the **payload** element. This means that if your data model should change in the future, there will be no need to change and recompile the plugin.
-	
+
+##### wp8
+Register as 
+
+	pushNotification = window.plugins.pushNotification;
+	pushNotification.register(successHandler, errorHandler, {"channelName":"your_channel_name","ecb":"onNotification"});
+          	
+	    function successHandler(result) {
+			console.log('registered###' + result.uri);  
+		// send uri to your notification server
+	    }          	
+
+onNotification is fired if the app is running when you receive the toast notification
+
+	    function onNotification (e) {  
+			navigator.notification.alert(e.text2, function(){}, e.text1);
+	    } 
+    
+To control the launch page when the user taps on your toast notification when the app is not running, add the following code to your mainpage.xaml.cs
+
+        protected override void OnNavigatedTo(System.Windows.Navigation.NavigationEventArgs e)
+        {
+            base.OnNavigatedTo(e);
+            try
+            {
+                if (this.NavigationContext.QueryString["NavigatedFrom"] == "toast") // this is set on the server
+                {
+                    this.PGView.StartPageUri = new Uri("//www/index.html#notification-page", UriKind.Relative);
+                }
+            }
+            catch (KeyNotFoundException)
+            {
+            }
+        }
+
 #### unregister
 You will typically call this when your app is exiting, to cleanup any used resources. Its not strictly necessary to call it, and indeed it may be desireable to NOT call it if you are debugging your intermediarry push server. When you call unregister(), the current token for a particular device will get invalidated, and the next call to register() will return a new token. If you do NOT call unregister(), the last token will remain in effect until it is invalidated for some reason at the GCM side. Since such invalidations are beyond your control, its recommended that, in a production environment, that you have a matching unregister() call, for every call to register(), and that your server updates the devices' records each time.
 
