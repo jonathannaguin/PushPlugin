@@ -15,6 +15,10 @@ namespace WPCordovaClassLib.Cordova.Commands
         private string channelName;
         private string toastCallback;
 
+        /// <summary>
+        /// Register method
+        /// </summary>
+        /// <param name="options"></param>
         public void register(string options)
         {
             Options pushOptions;
@@ -37,24 +41,46 @@ namespace WPCordovaClassLib.Cordova.Commands
             {
                 pushChannel = new HttpNotificationChannel(channelName);
 
-                pushChannel.ChannelUriUpdated += new EventHandler<NotificationChannelUriEventArgs>(PushChannel_ChannelUriUpdated);
-                pushChannel.ErrorOccurred += new EventHandler<NotificationChannelErrorEventArgs>(PushChannel_ErrorOccurred);
-                pushChannel.ShellToastNotificationReceived += new EventHandler<NotificationEventArgs>(PushChannel_ShellToastNotificationReceived);
+                pushChannel.ChannelUriUpdated += PushChannel_ChannelUriUpdated;
+                pushChannel.ErrorOccurred += PushChannel_ErrorOccurred;
+                pushChannel.ShellToastNotificationReceived += PushChannel_ShellToastNotificationReceived;
 
                 pushChannel.Open();
                 pushChannel.BindToShellToast();
             }
             else
             {
-                pushChannel.ChannelUriUpdated += new EventHandler<NotificationChannelUriEventArgs>(PushChannel_ChannelUriUpdated);
-                pushChannel.ErrorOccurred += new EventHandler<NotificationChannelErrorEventArgs>(PushChannel_ErrorOccurred);
-                pushChannel.ShellToastNotificationReceived += new EventHandler<NotificationEventArgs>(PushChannel_ShellToastNotificationReceived);
+                pushChannel.ChannelUriUpdated += PushChannel_ChannelUriUpdated;
+                pushChannel.ErrorOccurred += PushChannel_ErrorOccurred;
+                pushChannel.ShellToastNotificationReceived += PushChannel_ShellToastNotificationReceived;
 
                 RegisterResult result = new RegisterResult();
                 result.ChannelName = this.channelName;
                 result.Uri = pushChannel.ChannelUri.ToString();
                 this.DispatchCommandResult(new PluginResult(PluginResult.Status.OK, result));
             }
+        }
+
+        /// <summary>
+        /// Unregister method 
+        /// </summary>
+        /// <param name="options"></param>
+        public void unregister(string options)
+        {
+
+            if (pushChannel != null)
+            {
+                pushChannel.Close();
+
+                pushChannel.ChannelUriUpdated -= PushChannel_ChannelUriUpdated;
+                pushChannel.ErrorOccurred -= PushChannel_ErrorOccurred;
+                pushChannel.ShellToastNotificationReceived -= PushChannel_ShellToastNotificationReceived;
+
+                pushChannel.Dispose();
+                pushChannel = null;
+            }
+
+            this.DispatchCommandResult(new PluginResult(PluginResult.Status.OK));
         }
 
         void PushChannel_ChannelUriUpdated(object sender, NotificationChannelUriEventArgs e)
