@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Runtime.Serialization;
 using System.Windows;
+using Microsoft.Phone.Shell;
 
 namespace WPCordovaClassLib.Cordova.Commands
 {
@@ -14,6 +15,8 @@ namespace WPCordovaClassLib.Cordova.Commands
         private HttpNotificationChannel pushChannel;
         private string channelName;
         private string toastCallback;
+
+        private static bool IsRunningInBackground { get; set; }
 
         /// <summary>
         /// Register method
@@ -59,6 +62,11 @@ namespace WPCordovaClassLib.Cordova.Commands
                 result.Uri = pushChannel.ChannelUri.ToString();
                 this.DispatchCommandResult(new PluginResult(PluginResult.Status.OK, result));
             }
+
+            PhoneApplicationService service = PhoneApplicationService.Current;
+            service.RunningInBackground += service_RunningInBackground;
+            service.Activated += service_Activated;
+            service.Deactivated += service_Deactivated;
         }
 
         /// <summary>
@@ -79,6 +87,11 @@ namespace WPCordovaClassLib.Cordova.Commands
                 pushChannel.Dispose();
                 pushChannel = null;
             }
+
+            PhoneApplicationService service = PhoneApplicationService.Current;
+            service.RunningInBackground -= service_RunningInBackground;
+            service.Activated -= service_Activated;
+            service.Deactivated -= service_Deactivated;
 
             this.DispatchCommandResult(new PluginResult(PluginResult.Status.OK));
         }
@@ -103,17 +116,50 @@ namespace WPCordovaClassLib.Cordova.Commands
 
         void PushChannel_ShellToastNotificationReceived(object sender, NotificationEventArgs e)
         {
-            StringBuilder message = new StringBuilder();
-            string relativeUri = string.Empty;
+            System.Diagnostics.Debug.WriteLine("PushChannel_ShellToastNotificationReceived");
+
+            string title = string.Empty;
+            string subtitle = string.Empty;
+            string extras = string.Empty;
+
+            e.Collection.TryGetValue("wp:Text1", out title);
+            e.Collection.TryGetValue("wp:Text2", out subtitle);
+            e.Collection.TryGetValue("wp:Param", out extras);
 
             Toast toast = new Toast();
-            toast.Title = e.Collection["wp:Text1"];
-            toast.Subtitle = e.Collection["wp:Text2"];
-            PluginResult result = new PluginResult(PluginResult.Status.OK, toast);
+            toast.Title = title;
+            toast.Subtitle = subtitle;
+            toast.Extra = extras;
+            
+            if (IsRunningInBackground)
+            {
+                Microsoft.Phone.Shell.ShellToast ShellToast = new Microsoft.Phone.Shell.ShellToast();
+                ShellToast.Content = toast.Subtitle;
+                ShellToast.Title = toast.Title;
+                ShellToast.NavigationUri = new Uri(toast.Extra, UriKind.Relative);
+                ShellToast.Show();
+            }
+            else
+            {
+                PluginResult result = new PluginResult(PluginResult.Status.OK, toast);
+                var script = new ScriptCallback(this.toastCallback, new string[] { result.Message });
+                this.InvokeCustomScript(script, false);
+            }
+        }
 
-            var script = new ScriptCallback(this.toastCallback, new string[] { result.Message });
+        private void service_Deactivated(object sender, DeactivatedEventArgs e)
+        {
+            IsRunningInBackground = false;
+        }
 
-            this.InvokeCustomScript(script, false);
+        private void service_Activated(object sender, ActivatedEventArgs e)
+        {
+            IsRunningInBackground = false;
+        }
+
+        private void service_RunningInBackground(object sender, RunningInBackgroundEventArgs e)
+        {
+            IsRunningInBackground = true;
         }
 
         [DataContract]
@@ -124,6 +170,9 @@ namespace WPCordovaClassLib.Cordova.Commands
 
             [DataMember(Name = "text2", IsRequired = false)]
             public string Subtitle { get; set; }
+
+            [DataMember(Name = "extra", IsRequired = false)]
+            public string Extra { get; set; }
         }
 
         [DataContract]

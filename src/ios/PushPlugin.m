@@ -37,7 +37,7 @@
 
 - (void)unregister:(CDVInvokedUrlCommand*)command;
 {
-	self.callbackId = command.callbackId;
+    self.callbackId = command.callbackId;
 
     [[UIApplication sharedApplication] unregisterForRemoteNotifications];
     [self successWithMessage:@"unregistered"];
@@ -45,7 +45,7 @@
 
 - (void)register:(CDVInvokedUrlCommand*)command;
 {
-	self.callbackId = command.callbackId;
+    self.callbackId = command.callbackId;
 
     NSMutableDictionary* options = [command.arguments objectAtIndex:0];
 
@@ -86,69 +86,30 @@
     isInline = NO;
 
     [[UIApplication sharedApplication] registerForRemoteNotificationTypes:notificationTypes];
-	
-	if (notificationMessage)			// if there is a pending startup notification
-		[self notificationReceived];	// go ahead and process it
+    
+    if (notificationMessage)            // if there is a pending startup notification
+        [self notificationReceived];    // go ahead and process it
 }
 
 - (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
 
-    NSMutableDictionary *results = [NSMutableDictionary dictionary];
     NSString *token = [[[[deviceToken description] stringByReplacingOccurrencesOfString:@"<"withString:@""]
                         stringByReplacingOccurrencesOfString:@">" withString:@""]
                        stringByReplacingOccurrencesOfString: @" " withString: @""];
-    [results setValue:token forKey:@"deviceToken"];
     
-    #if !TARGET_IPHONE_SIMULATOR
-        // Get Bundle Info for Remote Registration (handy if you have more than one app)
-        [results setValue:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleDisplayName"] forKey:@"appName"];
-        [results setValue:[[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleVersion"] forKey:@"appVersion"];
-        
-        // Check what Notifications the user has turned on.  We registered for all three, but they may have manually disabled some or all of them.
-        NSUInteger rntypes = [[UIApplication sharedApplication] enabledRemoteNotificationTypes];
 
-        // Set the defaults to disabled unless we find otherwise...
-        NSString *pushBadge = @"disabled";
-        NSString *pushAlert = @"disabled";
-        NSString *pushSound = @"disabled";
-
-        // Check what Registered Types are turned on. This is a bit tricky since if two are enabled, and one is off, it will return a number 2... not telling you which
-        // one is actually disabled. So we are literally checking to see if rnTypes matches what is turned on, instead of by number. The "tricky" part is that the
-        // single notification types will only match if they are the ONLY one enabled.  Likewise, when we are checking for a pair of notifications, it will only be
-        // true if those two notifications are on.  This is why the code is written this way
-        if(rntypes & UIRemoteNotificationTypeBadge){
-            pushBadge = @"enabled";
-        }
-        if(rntypes & UIRemoteNotificationTypeAlert) {
-            pushAlert = @"enabled";
-        }
-        if(rntypes & UIRemoteNotificationTypeSound) {
-            pushSound = @"enabled";
-        }
-
-        [results setValue:pushBadge forKey:@"pushBadge"];
-        [results setValue:pushAlert forKey:@"pushAlert"];
-        [results setValue:pushSound forKey:@"pushSound"];
-
-        // Get the users Device Model, Display Name, Token & Version Number
-        UIDevice *dev = [UIDevice currentDevice];
-        [results setValue:dev.name forKey:@"deviceName"];
-        [results setValue:dev.model forKey:@"deviceModel"];
-        [results setValue:dev.systemVersion forKey:@"deviceSystemVersion"];
-
-		[self successWithMessage:[NSString stringWithFormat:@"%@", token]];
-    #endif
+    [self successWithMessage:[NSString stringWithFormat:@"%@", token]];
 }
 
 - (void)didFailToRegisterForRemoteNotificationsWithError:(NSError *)error
 {
-	[self failWithMessage:@"" withError:error];
+    [self failWithMessage:@"" withError:error];
 }
 
 - (void)notificationReceived {
-    NSLog(@"Notification received");
+    DLog(@"Notification received");
 
-    if (notificationMessage && self.callback)
+    if (self.notificationMessage && self.callback)
     {
         NSError *error;
         NSData *jsonData = [NSJSONSerialization dataWithJSONObject:[notificationMessage objectForKey:@"aps"]
@@ -159,7 +120,7 @@
             NSLog(@"Error parsing the notification message: %@", error);
         } else {
             NSString *jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-            NSLog(@"Msg: %@", jsonStr);
+            DLog(@"Msg: %@", jsonStr);
             NSString * jsCallBack = [NSString stringWithFormat:@"%@(%@);", self.callback, jsonStr];
             [self.webView stringByEvaluatingJavaScriptFromString:jsCallBack];
         }
@@ -172,7 +133,7 @@
 }
 
 - (void)setApplicationIconBadgeNumber:(CDVInvokedUrlCommand*)command; {
-  DLog(@"setApplicationIconBadgeNumber:%@\n", command.arguments);
+    DLog(@"setApplicationIconBadgeNumber:%@\n", command.arguments);
     
     self.callbackId = command.callbackId;
     
