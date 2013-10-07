@@ -57,38 +57,38 @@
     if ([badgeArg isKindOfClass:[NSString class]])
     {
         if ([badgeArg isEqualToString:@"true"])
-        notificationTypes |= UIRemoteNotificationTypeBadge;
+            notificationTypes |= UIRemoteNotificationTypeBadge;
     }
     else if ([badgeArg boolValue])
-    notificationTypes |= UIRemoteNotificationTypeBadge;
+        notificationTypes |= UIRemoteNotificationTypeBadge;
     
     if ([soundArg isKindOfClass:[NSString class]])
     {
         if ([soundArg isEqualToString:@"true"])
-        notificationTypes |= UIRemoteNotificationTypeSound;
+            notificationTypes |= UIRemoteNotificationTypeSound;
     }
     else if ([soundArg boolValue])
-    notificationTypes |= UIRemoteNotificationTypeSound;
+        notificationTypes |= UIRemoteNotificationTypeSound;
     
     if ([alertArg isKindOfClass:[NSString class]])
     {
         if ([alertArg isEqualToString:@"true"])
-        notificationTypes |= UIRemoteNotificationTypeAlert;
+            notificationTypes |= UIRemoteNotificationTypeAlert;
     }
     else if ([alertArg boolValue])
-    notificationTypes |= UIRemoteNotificationTypeAlert;
+        notificationTypes |= UIRemoteNotificationTypeAlert;
     
     self.callback = [options objectForKey:@"ecb"];
     
     if (notificationTypes == UIRemoteNotificationTypeNone)
-    NSLog(@"PushPlugin.register: Push notification type is set to none");
+        NSLog(@"PushPlugin.register: Push notification type is set to none");
     
     isInline = NO;
     
     [[UIApplication sharedApplication] registerForRemoteNotificationTypes:notificationTypes];
 	
 	if (notificationMessage)			// if there is a pending startup notification
-    [self notificationReceived];	// go ahead and process it
+        [self notificationReceived];	// go ahead and process it
 }
 
 - (void)didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
@@ -114,20 +114,27 @@
         NSLog(@"notificationMessage:: %@", self.notificationMessage);
         
         NSError *error;
-        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:[notificationMessage objectForKey:@"aps"]
-                                                           options:0
-                                                             error:&error];
-        NSData *jsonExtraData = [NSJSONSerialization dataWithJSONObject:[notificationMessage objectForKey:@"extra"]
-                                                                options:0
-                                                                  error:&error];
+        NSData *jsonData = [NSJSONSerialization dataWithJSONObject:[notificationMessage objectForKey:@"aps"] options:0 error:&error];
+        
+        NSData *jsonExtraData = nil;
+        if ([notificationMessage objectForKey:@"extra"] != nil){
+            jsonExtraData = [NSJSONSerialization dataWithJSONObject:[notificationMessage objectForKey:@"extra"] options:0 error:&error];
+        }
         
         if (!jsonData) {
             NSLog(@"Error parsing the notification message: %@", error);
         } else {
             NSString *jsonStr = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-            NSString *jsonExtraStr = [[NSString alloc] initWithData:jsonExtraData encoding:NSUTF8StringEncoding];
             
-            NSString * jsCallBack = [NSString stringWithFormat:@"%@(%@, %@);", self.callback, jsonStr, jsonExtraStr];
+            NSString * jsCallBack = nil;
+            
+            if (jsonExtraData != nil){
+                NSString *jsonExtraStr = [[NSString alloc] initWithData:jsonExtraData encoding:NSUTF8StringEncoding];
+                jsCallBack = [NSString stringWithFormat:@"%@(%@, %@);", self.callback, jsonStr, jsonExtraStr];
+            }else{
+                jsCallBack = [NSString stringWithFormat:@"%@(%@);", self.callback, jsonStr];
+            }
+            
             [self.webView stringByEvaluatingJavaScriptFromString:jsCallBack];
         }
         
