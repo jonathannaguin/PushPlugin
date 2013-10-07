@@ -1,20 +1,15 @@
 package com.plugin.gcm;
 
-import java.util.List;
-
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.annotation.SuppressLint;
-import android.app.ActivityManager;
-import android.app.ActivityManager.RunningTaskInfo;
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.os.PowerManager;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
@@ -26,6 +21,9 @@ public class GCMIntentService extends GCMBaseIntentService {
 
 	public static final int NOTIFICATION_ID = 237;
 	private static final String TAG = "GCMIntentService";
+	private static final String FIELD_MESSAGE = "alert";
+	private static final String FIELD_COUNT = "msgcnt";
+	private static final String FIELD_SOUND = "sound";
 
 	public GCMIntentService() {
 		super("GCMIntentService");
@@ -41,8 +39,6 @@ public class GCMIntentService extends GCMBaseIntentService {
 		try {
 			json = new JSONObject().put("event", "registered");
 			json.put("regid", regId);
-
-			Log.v(TAG, "onRegistered: " + json.toString());
 
 			// Send this JSON data to the JavaScript application above EVENT
 			// should be set to the msg type
@@ -62,7 +58,6 @@ public class GCMIntentService extends GCMBaseIntentService {
 
 	@Override
 	protected void onMessage(Context context, Intent intent) {
-		Log.d(TAG, "onMessage - context: " + context);
 
 		// Extract the payload from the message
 		Bundle extras = intent.getExtras();
@@ -71,7 +66,7 @@ public class GCMIntentService extends GCMBaseIntentService {
 			PushPlugin.sendExtras(extras);
 
 			// Send a notification if there is a message
-			if (extras.getString("message").length() != 0) {
+			if (extras.containsKey(FIELD_MESSAGE) && extras.getString(FIELD_MESSAGE).length() != 0) {
 				createNotification(context, extras);
 			}
 		}
@@ -90,21 +85,25 @@ public class GCMIntentService extends GCMBaseIntentService {
 		
 		NotificationCompat.Builder mBuilder =
 			new NotificationCompat.Builder(context)
-				.setDefaults(Notification.DEFAULT_ALL)
 				.setSmallIcon(context.getApplicationInfo().icon)
 				.setWhen(System.currentTimeMillis())
 				.setContentTitle(appName)
 				.setTicker(appName)
 				.setContentIntent(contentIntent);
+		
+		if (extras.containsKey(FIELD_SOUND) && extras.getString(FIELD_SOUND).length() > 0){
+			Uri uri = Uri.parse("android.resource://" + getPackageName() +  "/raw/"+ removeExtension(extras.getString(FIELD_SOUND)));
+			mBuilder.setSound(uri);			
+		}
 
-		String message = extras.getString("message");
+		String message = extras.getString(FIELD_MESSAGE);
 		if (message != null) {
 			mBuilder.setContentText(message);
 		} else {
 			mBuilder.setContentText("<missing message content>");
 		}
 
-		String msgcnt = extras.getString("msgcnt");
+		String msgcnt = extras.getString(FIELD_COUNT);
 		if (msgcnt != null) {
 			mBuilder.setNumber(Integer.parseInt(msgcnt));
 		}
@@ -126,6 +125,27 @@ public class GCMIntentService extends GCMBaseIntentService {
 					.getApplicationLabel(context.getApplicationInfo());
 		
 		return (String)appName;
+	}
+	
+	private static String removeExtension(String s) {
+
+	    String separator = System.getProperty("file.separator");
+	    String filename;
+
+	    // Remove the path upto the filename.
+	    int lastSeparatorIndex = s.lastIndexOf(separator);
+	    if (lastSeparatorIndex == -1) {
+	        filename = s;
+	    } else {
+	        filename = s.substring(lastSeparatorIndex + 1);
+	    }
+
+	    // Remove the extension.
+	    int extensionIndex = filename.lastIndexOf(".");
+	    if (extensionIndex == -1)
+	        return filename;
+
+	    return filename.substring(0, extensionIndex);
 	}
 	
 	@Override
